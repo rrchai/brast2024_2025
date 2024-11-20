@@ -1,4 +1,5 @@
 import requests
+import csv
 from io import StringIO
 import synapseclient
 import logging
@@ -303,7 +304,6 @@ if __name__ == "__main__":
         unique_responses, registered_team_members)
 
     if valid_responses:
-        # Send invitations for valid responses
         for response in valid_responses:
             user_id = response.get("submitterid")
             if user_id:
