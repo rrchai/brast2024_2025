@@ -299,15 +299,18 @@ if __name__ == "__main__":
     challenge_id = get_challenge_id(ENTITY_ID)
     registered_team_members = get_all_registered_team_members(challenge_id)
 
-    # Validate responses
     valid_responses = validate_responses(
         unique_responses, registered_team_members)
 
-    # # Send invitations for valid responses
-    # for response in valid_responses:
-    #     user_id = response.get("submitterid")
-    #     if user_id:
-    #         invite_user_to_team(DATA_ACCESS_TEAM_ID, user_id)
+    if valid_responses:
+        # Send invitations for valid responses
+        for response in valid_responses:
+            user_id = response.get("submitterid")
+            if user_id:
+                invite_user_to_team(DATA_ACCESS_TEAM_ID, user_id)
 
-    admin_id = syn.getUserProfile()["ownerId"]
-    send_email_to_admin(admin_id, valid_responses)
+        admin_id = syn.getUserProfile()["ownerId"]
+        send_email_to_admin(admin_id, valid_responses)
+    else:
+        logger.info(
+            "No valid responses found. Skipping invitations and email notifications.")
