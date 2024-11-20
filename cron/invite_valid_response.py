@@ -59,15 +59,7 @@ def get_team_members(team_id):
 
 
 def get_registered_teams(challenge_id):
-    """
-    Retrieve all teams registered for the challenge in one call using the maximum limit.
-
-    Args:
-        challenge_id (str): Synapse challenge ID.
-
-    Returns:
-        list: List of all registered team IDs.
-    """
+    """Retrieve all teams registered for the challenge"""
     try:
         # Fetch all results in one API call by setting the maximum limit
         endpoint = f"/challenge/{challenge_id}/challengeTeam?limit=1000"
@@ -151,8 +143,10 @@ def has_pending_invitation(team_id, user_id):
 def validate_responses(rows, registered_team_members):
     """Validate responses based on Synapse user checks, team membership, and invitations."""
     valid_responses = []
-    for row in rows:
-        synapse_username = row.get("Synapse Username")
+    total_rows = len(rows)
+    for index, row in enumerate(rows, start=1):
+        synapse_username = row.get("Synapse Username").strip()
+        logger.info(f"Processing row {index}/{total_rows}...")
 
         # Validate Synapse username
         user_id = validate_synapse_user(synapse_username)
@@ -206,7 +200,6 @@ def invite_user_to_team(team_id, user_id):
             "Thank you for your interest in the BraTS 2024 Challenge! <br/><br/>"
             "Once you click 'Join', you will be able to access the challenge data."
         )
-        # Send the invitation
         syn.invite_to_team(
             team=team_id,
             user=user_id,
@@ -241,9 +234,9 @@ def send_email_to_admin(admin_id, validated_responses):
         )
         for response in validated_responses:
             timestamp = response.get("Timestamp", "N/A")
-            username = response.get("Synapse Username", "N/A")
+            username = response.get("Synapse Username", "N/A").strip()
             user_id = response.get("submitterid", "N/A")
-            team = response.get("Synapse Challenge Team", "N/A")
+            team = response.get("Synapse Challenge Team", "N/A").strip()
             message_body += (
                 f"<tr>"
                 f"<td>{timestamp}</td>"
@@ -272,9 +265,12 @@ def send_email_to_admin(admin_id, validated_responses):
 
 if __name__ == "__main__":
 
-    # Initialize logging
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    logger = logging.getLogger()
 
     # Synapse setup
     syn = synapseclient.Synapse()
@@ -284,16 +280,16 @@ if __name__ == "__main__":
     REGISTRATION_TEAM_ID = "3501723"
     DATA_ACCESS_TEAM_ID = "3502558"
 
-    # Google Sheet CSV URL
-    # SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1yVT4SFslQ64wA61IuTgWCRdzhqhG-IygZnuYygc-Y4s/export?format=csv"
-    SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/18Z7DZqGFeiEW_S9zC-Z9Ovfqdnk34vpfi5m2JgjVNUE/export?format=csv"
+    # Response Google Sheet URL
+    SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1yVT4SFslQ64wA61IuTgWCRdzhqhG-IygZnuYygc-Y4s/export?format=csv"
+
     # Entity ID for the challenge
     ENTITY_ID = "syn53708249"
 
     # Fetch data from the Google Sheet
     responses = fetch_google_sheet_data(SHEET_CSV_URL)
 
-    # Ensure unique rows by Synapse Username
+    # Ensure unique rows by username
     unique_responses = get_unique_rows(responses)
 
     # Retrieve challenge ID and registered team members
