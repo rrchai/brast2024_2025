@@ -3,6 +3,7 @@ import csv
 from io import StringIO
 import synapseclient
 import logging
+import time
 
 
 def fetch_google_sheet_data(csv_url):
@@ -304,6 +305,7 @@ if __name__ == "__main__":
             user_id = response.get("submitterid")
             if user_id:
                 invite_user_to_team(DATA_ACCESS_TEAM_ID, user_id)
+                time.sleep(60)  # avoid frequent API calls by delaying for 60s
 
         admin_id = syn.getUserProfile()["ownerId"]
         send_email_to_admin(admin_id, valid_responses)
