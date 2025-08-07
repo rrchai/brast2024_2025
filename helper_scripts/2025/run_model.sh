@@ -9,7 +9,7 @@ set -e  # Exit on any error
 INPUT_DIR=""
 OUTPUT_DIR=""
 DOCKER_IMAGE=""
-LOG_FILE="model_inference.txt"
+LOG_FILE="model_inference.log"
 
 # Function to display usage
 usage() {
@@ -23,7 +23,7 @@ usage() {
     echo "  --image           Docker image to run"
     echo ""
     echo "Optional flags:"
-    echo "  --log             Log file path (default: model_inference.txt)"
+    echo "  --log             Log file path (default: model_inference.log)"
     echo "  -h, --help        Show this help message"
     echo ""
     exit 1
@@ -115,15 +115,6 @@ if ! docker info | grep -q "nvidia"; then
     echo "GPU functionality might not work properly"
 fi
 
-# Determine log file path (save to output directory if relative path)
-if [[ "$LOG_FILE" = /* ]]; then
-    # Absolute path - use as is
-    FULL_LOG_PATH="$LOG_FILE"
-else
-    # Relative path - save to output directory
-    FULL_LOG_PATH="$OUTPUT_DIR/$LOG_FILE"
-fi
-
 # Display configuration
 echo "============================================"
 echo "Docker Container Runner"
@@ -132,7 +123,7 @@ echo "Input Directory:  $INPUT_DIR"
 echo "Output Directory: $OUTPUT_DIR"
 echo "Docker Image:     $DOCKER_IMAGE"
 echo "Container Name:   $CONTAINER_NAME"
-echo "Log File:         $FULL_LOG_PATH"
+echo "Log File:         $LOG_FILE"
 echo "============================================"
 
 # Confirm before running
@@ -142,6 +133,21 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "Execution cancelled"
     exit 0
 fi
+
+# Create output directory if it doesn't exist
+if [ ! -d "$OUTPUT_DIR" ]; then
+    echo "Creating output directory: $OUTPUT_DIR"
+    mkdir -p "$OUTPUT_DIR"
+fi
+
+
+# Create parent directory for log file if it doesn't exist
+LOG_DIR=$(dirname "$LOG_FILE")
+if [ ! -d "$LOG_DIR" ]; then
+    echo "Creating log directory: $LOG_DIR"
+    mkdir -p "$LOG_DIR"
+fi
+
 
 # Run the Docker container
 echo "Starting Docker container in detached mode..."
@@ -189,8 +195,21 @@ echo "Container: $CONTAINER_NAME started ($CONTAINER_ID)"
     fi
     
     # Log completion with status
-    echo "Docker Image: $DOCKER_IMAGE, Input Folder: $INPUT_DIR, Start Time: $START_TIMESTAMP, Runtime: $RUNTIME (s), Status: $STATUS, Error: $ERROR_MESSAGE" >> "$FULL_LOG_PATH"
-) &
+    echo "Docker Image: $DOCKER_IMAGE, Input Folder: $INPUT_DIR, Start Time: $START_TIMESTAMP, Runtime: $RUNTIME (s), Status: $STATUS, Error: $ERROR_MESSAGE" >> "$LOG_FILE"
 
-# Log the start
-echo "Docker Image: $DOCKER_IMAGE, Input Folder: $INPUT_DIR, Start Time: $START_TIMESTAMP, Container ID: $CONTAINER_ID, Status: Started" >> "$FULL_LOG_PATH"
+    # Create zip file if container completed successfully
+    if [ "$EXIT_CODE" = "0" ]; then
+        echo "Creating zip file from NIfTI files in output directory..."
+        OUTPUT_DIR_NAME=$(basename "$OUTPUT_DIR")
+        
+        # zip all .nii.gz files
+        cd "$OUTPUT_DIR"
+        if ls *.nii.gz 2>/dev/null | head -1 > /dev/null; then
+            zip -r "../${OUTPUT_DIR_NAME}.zip" *.nii.gz 2>/dev/null || true
+            echo "Zip file created: $(dirname "$OUTPUT_DIR")/${OUTPUT_DIR_NAME}.zip"
+        else
+            echo "No NIfTI files found in output directory"
+        fi
+        cd - > /dev/null
+    fi
+) &
