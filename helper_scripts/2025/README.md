@@ -27,8 +27,9 @@ pip install synapseclient brats cwltool
 mkdir -p workspace && cd workspace
 ```
 
-1. Download testing data (used for `INPUT_DIR`) and groundtruth (used for `GT_FILE`)
-2. Get scoring workflow file
+1. Download testing data (modalitiy dropped) and groundtruth
+2. Get post-processing scripts, `merge_folders.py` and `segmentation.py` from [here](https://www.synapse.org/Synapse:syn68790778) provided by Bran.
+3. Get scoring workflow file
 
 ```bash
 wget https://raw.githubusercontent.com/Sage-Bionetworks-Challenges/brats-infra/refs/heads/main/wf-segmentation/steps/score.cwl
@@ -39,10 +40,10 @@ wget https://raw.githubusercontent.com/Sage-Bionetworks-Challenges/brats-infra/r
 Set up the required environment variables for your submission:
 
 ```bash
-export SUBMISSION={team_name}_{submission_id}
-export DOCKER_IMAGE={docker_image}
+export SUBMISSION=<team_name>_<submission_id>
+export DOCKER_IMAGE=<docker_image>
 
-export COHORT=MET
+export COHORT=<cohort>
 export MODEL_NAME=${SUBMISSION}_${COHORT}
 
 export INPUT_DIR=/absolute_path/to/testing_data_directory
@@ -69,7 +70,7 @@ export LOG_DIR=$HOME/log
 
 ## Evaluation Pipeline
 
-The evaluation process consists of three main stages:
+The evaluation process consists of three stages:
 
 ### Stage 1: Model Inference
 
@@ -104,8 +105,7 @@ nohup bash process_predictions.sh \
 
 **What it does:**
 
-- Applies post-processing steps instructed by Bran
-- Generates final outputs used to score and `{MODEL_NAME}_final.zip`
+- Applies post-processing steps to generates final outputs used to score and `{MODEL_NAME}_final.zip`
 
 ### Stage 3: Scoring
 
