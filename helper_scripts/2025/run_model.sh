@@ -163,6 +163,7 @@ CONTAINER_ID=$(docker run \
     -v "$INPUT_DIR":/input:ro \
     -v "$OUTPUT_DIR":/output:rw \
     --network none \
+    --user root \
     --gpus all \
     --shm-size=8g \
     -d \
